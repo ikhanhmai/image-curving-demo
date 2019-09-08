@@ -1,12 +1,11 @@
 
-
 (function () {
-
-	var warped_image = document.getElementById('warped_image'),
+	var fabric_canvas  = new fabric.Canvas('canvas',{
+			  selectionColor: 'blue',
+				selectionLineWidth: 2
+		}),
 		warp_canvas  = document.createElement('canvas'),
 		warp_context = warp_canvas.getContext('2d');
-
-	// inputs
 	var warp_percentage_input = document.getElementById('warp_percentage');
 
 	// for reference, the full method
@@ -16,15 +15,15 @@
 			powTsquared = Math.pow(T, 2);
 
 		var x = pow1minusTsquared * start_point.x + 2 * (1 - T) * T * control_point.x + powTsquared * end_point.x,
-			y = pow1minusTsquared * start_point.y + 2 * (1 - T) * T * control_point.y + powTsquared * end_point.y; 
-		
+			y = pow1minusTsquared * start_point.y + 2 * (1 - T) * T * control_point.y + powTsquared * end_point.y;
+
 		return {
 			x: x,
 			y: y
 		};
 	}
 
-	
+
 	function warpHorizontally (image_to_warp, invert_curve) {
 
 		var image_width  = image_to_warp.width,
@@ -34,7 +33,7 @@
 			// I chose to determine the offset by applying a percentage value to the image width
 			warp_x_offset = warp_percentage * image_width;
 
-		warp_canvas.width  = image_width + Math.ceil(warp_x_offset * 2); 
+		warp_canvas.width  = image_width + Math.ceil(warp_x_offset * 2);
 		warp_canvas.height = image_height;
 
 		// see https://www.rgraph.net/blog/an-example-of-the-html5-canvas-quadraticcurveto-function.html
@@ -87,7 +86,7 @@
 			warp_y_offset = warp_percentage * image_height;
 
 		warp_canvas.width  = image_width;
-		warp_canvas.height = image_height + Math.ceil(warp_y_offset * 2); 
+		warp_canvas.height = image_height + Math.ceil(warp_y_offset * 2);
 
 		// see https://www.rgraph.net/blog/an-example-of-the-html5-canvas-quadraticcurveto-function.html
 		// for more details regarding start_point, control_point si end_point
@@ -103,7 +102,7 @@
 			x: image_width,
 			y: 0
 		};
-		
+
 		var offset_y_points = [],
 			t = 0;
 		for ( ; t < image_width; t++ ) {
@@ -126,14 +125,31 @@
 			);
 		}
 	}
+	var image_to_warp = new Image();
 
+	function addToFabric(image_to_warp){
+			var imgInstance = new fabric.Image(image_to_warp, {
+				left: 100,
+				top: 100,
+				angle: 0,
+				opacity: 1
+			});
+			fabric_canvas.clear();
+			fabric_canvas.add(imgInstance);
+
+			var link = document.getElementById('save-image');
+
+
+			link.addEventListener('click', function(ev) {
+				link.href = fabric_canvas.toDataURL('png');
+				link.download = "mypainting.png";
+			}, false);
+
+	}
 
 	function warpImage () {
-
-		var image_to_warp = new Image();
-
 		image_to_warp.onload = function () {
-
+			imageLoaded = true;
 			var warp_orientation = document.querySelector('input[name="warp_orientation"]:checked').value,
 				invert_curve = document.getElementById('invert_curve').checked;
 			if (warp_orientation === 'horizontal') {
@@ -141,15 +157,21 @@
 			} else {
 				warpVertically(image_to_warp, invert_curve);
 			}
-			
-			warped_image.src = warp_canvas.toDataURL();	
+			var warpedImg = document.createElement('img');
+			warpedImg.src = warp_canvas.toDataURL('png');
+			warpedImg.onload = function() {
+				addToFabric(warpedImg);
+			}
 		}
-
 		image_to_warp.src = 'test_image.jpg';
 	}
+
+	function saveImage () {
+		window.open(warp_canvas.toDataURL('jpg'));
+	}
+
 	warpImage();
-
 	window.warpImage = warpImage;
-
+	window.saveImage = saveImage;
 })();
 
